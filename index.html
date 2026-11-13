@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Misión NASA 1962 — Simulador Numérico de Despegue</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --card-bg: rgba(17, 24, 39, 0.88);
+      --border-color: rgba(56, 189, 248, 0.25);
+      --accent-blue: #38bdf8;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+      --accent-purple: #a855f7;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #060b19 0%, #0f172a 55%, #1e1b4b 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 1.5rem;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    header .badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid var(--accent-blue);
+      padding: 0.25rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+    }
+
+    header h1 {
+      font-size: 1.85rem;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+      margin-bottom: 0.4rem;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .grid-main {
+      display: grid;
+      grid-template-columns: 330px 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 960px) {
+      .grid-main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: var(--accent-blue);
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 0.85rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1rem;
+    }
+
+    button {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #0f172a;
+    }
+
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.2);
+      color: var(--text-main);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .formula-box {
+      background: rgba(15, 23, 42, 0.8);
+      border-left: 3px solid var(--accent-amber);
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      margin-top: 1rem;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .kpi-card {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .kpi-card span {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .kpi-card strong {
+      display: block;
+      font-size: 1.35rem;
+      margin-top: 0.25rem;
+    }
+
+    .kpi-sub {
+      font-size: 0.78rem;
+      margin-top: 0.2rem;
+    }
+
+    .status-banner {
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      font-size: 0.92rem;
+      font-weight: 500;
+    }
+
+    .status-ok {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--accent-emerald);
+      color: #6ee7b7;
+    }
+
+    .status-warn {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--accent-amber);
+      color: #fcd34d;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 768px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      max-height: 420px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      text-align: right;
+    }
+
+    th, td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      white-space: nowrap;
+    }
+
+    th {
+      background: #0f172a;
+      color: var(--accent-blue);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      font-weight: 600;
+    }
+
+    th:first-child, td:first-child {
+      text-align: center;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: rgba(56, 189, 248, 0.06);
+    }
+
+    .justification-box {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+    }
+
+    .justification-box h3 {
+      color: var(--accent-purple);
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">NASA Langley Research Center • 1962</div>
+      <h1>Simulación Numérica de Despegue Espacial (Friendship 7)</h1>
+      <p>Comparación entre Solución Analítica y Métodos Numéricos (Euler, Heun/RK2 y Runge-Kutta RK4)</p>
+    </header>
+
+    <div class="grid-main">
+      <!-- PANEL DE PARÁMETROS -->
+      <aside>
+        <div class="card">
+          <h2>1. Parámetros del Cohete</h2>
+          <div class="form-group">
+            <label for="mass">Masa del cohete \(m\) (kg)</label>
+            <input type="number" id="mass" value="1000" min="1" step="10" />
+          </div>
+          <div class="form-group">
+            <label for="thrust">Empuje del motor \(T\) (N)</label>
+            <input type="number" id="thrust" value="15000" min="0" step="100" />
+          </div>
+          <div class="form-group">
+            <label for="gravity">Gravedad \(g\) (m/s²)</label>
+            <input type="number" id="gravity" value="9.81" min="0.1" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="drag">Coef. resistencia lineal \(k\) (kg/s)</label>
+            <input type="number" id="drag" value="100" min="0.1" step="5" />
+          </div>
+          <div class="form-group">
+            <label for="tMax">Tiempo total de simulación \(t_{\max}\) (s)</label>
+            <input type="number" id="tMax" value="20" min="2" max="120" step="2" />
+          </div>
+          <div class="form-group">
+            <label for="stepH">Tamaño de paso \(h\) (s)</label>
+            <select id="stepH">
+              <option value="2" selected>2.0 s (10 iteraciones para 20s)</option>
+              <option value="1">1.0 s (20 iteraciones para 20s)</option>
+              <option value="0.5">0.5 s (40 iteraciones para 20s)</option>
+              <option value="0.25">0.25 s (80 iteraciones para 20s)</option>
+              <option value="0.1">0.1 s (200 iteraciones para 20s)</option>
+            </select>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn-primary" onclick="runSimulation()">Simular Vuelo</button>
+            <button class="btn-secondary" onclick="resetDefaults()">Restaurar</button>
+          </div>
+
+          <div class="formula-box">
+            <strong>Modelo Matemático (EDO):</strong><br />
+            • \( \frac{dv}{dt} = \frac{T}{m} - g - \frac{k}{m}v \)<br />
+            • \( \frac{dy}{dt} = v \)<br />
+            • C.I.: \( v(0) = 0, \; y(0) = 0 \)
+          </div>
+        </div>
+      </aside>
+
+      <!-- PANEL DE RESULTADOS -->
+      <main>
+        <div id="missionStatus" class="status-banner status-warn"></div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <span>Velocidad Analítica Final</span>
+            <strong id="kpiVExact" style="color: #10b981;">—</strong>
+            <div class="kpi-sub" id="kpiVTerminal">Velocidad terminal: —</div>
+          </div>
+          <div class="kpi-card">
+            <span>Velocidad Euler / Error Abs.</span>
+            <strong id="kpiVEuler" style="color: #f59e0b;">—</strong>
+            <div class="kpi-sub" id="kpiVErrEuler">Error Euler: —</div>
+          </div>
+          <div class="kpi-card">
+            <span>Altura Analítica Final</span>
+            <strong id="kpiYExact" style="color: #10b981;">—</strong>
+            <div class="kpi-sub" id="kpiYHeun">Heun (RK2): —</div>
+          </div>
+          <div class="kpi-card">
+            <span>Altura Euler / Error Abs.</span>
+            <strong id="kpiYEuler" style="color: #f59e0b;">—</strong>
+            <div class="kpi-sub" id="kpiYErrEuler">Error Euler: —</div>
+          </div>
+        </div>
+
+        <!-- GRÁFICAS -->
+        <div class="card">
+          <h2>2. Gráficas Comparativas (Analítica vs Euler, Heun y RK4)</h2>
+          <div class="charts-grid">
+            <div>
+              <h3 style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 0.5rem;">Velocidad \(v(t)\) [m/s]</h3>
+              <div class="chart-wrapper">
+                <canvas id="velocityChart"></canvas>
+              </div>
+            </div>
+            <div>
+              <h3 style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 0.5rem;">Altura \(y(t)\) [m]</h3>
+              <div class="chart-wrapper">
+                <canvas id="heightChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLA DE ITERACIONES -->
+        <div class="card">
+          <h2>3. Tabla de Iteraciones y Comparación de Errores Absolutos</h2>
+          <div class="table-container">
+            <table id="resultsTable">
+              <thead>
+                <tr>
+                  <th>t (s)</th>
+                  <th>v Analítica</th>
+                  <th>v Euler</th>
+                  <th>Err v Euler</th>
+                  <th>v Heun (RK2)</th>
+                  <th>v RK4</th>
+                  <th>y Analítica</th>
+                  <th>y Euler</th>
+                  <th>Err y Euler</th>
+                  <th>y Heun (RK2)</th>
+                  <th>y RK4</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- JUSTIFICACIÓN Y ANÁLISIS FÍSICO -->
+        <div class="card">
+          <h2>4. Interpretación Física y Justificación de Precisión (Euler vs Heun vs RK4)</h2>
+          <div class="justification-box" id="dynamicAnalysis"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    let velChartInstance = null;
+    let heightChartInstance = null;
+
+    function resetDefaults() {
+      document.getElementById('mass').value = 1000;
+      document.getElementById('thrust').value = 15000;
+      document.getElementById('gravity').value = 9.81;
+      document.getElementById('drag').value = 100;
+      document.getElementById('tMax').value = 20;
+      document.getElementById('stepH').value = "2";
+      runSimulation();
+    }
+
+    function runSimulation() {
+      const m = parseFloat(document.getElementById('mass').value);
+      const T = parseFloat(document.getElementById('thrust').value);
+      const g = parseFloat(document.getElementById('gravity').value);
+      const k = parseFloat(document.getElementById('drag').value);
+      const tMax = parseFloat(document.getElementById('tMax').value);
+      const h = parseFloat(document.getElementById('stepH').value);
+
+      if (m <= 0 || k <= 0 || tMax <= 0 || h <= 0) {
+        alert("Por favor ingresa valores positivos válidos.");
+        return;
+      }
+
+      // Constantes de la EDO: dv/dt = A - B*v
+      const A = (T / m) - g;
+      const B = k / m;
+      const vTerm = A / B; // Velocidad terminal cuando dv/dt = 0
+
+      // Funciones derivadas del sistema
+      const dvdt = (v) => A - B * v;
+      const dydt = (v) => v;
+
+      // Soluciones analíticas exactas (con v(0)=0, y(0)=0)
+      const vExactFn = (t) => (A / B) * (1 - Math.exp(-B * t));
+      const yExactFn = (t) => (A / B) * t - (A / (B * B)) * (1 - Math.exp(-B * t));
+
+      const steps = Math.round(tMax / h);
+      const labels = [];
+      const dataVExact = [], dataVEuler = [], dataVHeun = [], dataVRK4 = [];
+      const dataYExact = [], dataYEuler = [], dataYHeun = [], dataYRK4 = [];
+
+      let vE = 0, yE = 0; // Euler
+      let vH = 0, yH = 0; // Heun (RK2)
+      let vR = 0, yR = 0; // RK4
+
+      const tbody = document.querySelector('#resultsTable tbody');
+      tbody.innerHTML = '';
+
+      for (let i = 0; i <= steps; i++) {
+        const t = +(i * h).toFixed(4);
+        const vEx = vExactFn(t);
+        const yEx = yExactFn(t);
+
+        const errVE = Math.abs(vEx - vE);
+        const errYE = Math.abs(yEx - yE);
+
+        labels.push(t + 's');
+        dataVExact.push(vEx);
+        dataVEuler.push(vE);
+        dataVHeun.push(vH);
+        dataVRK4.push(vR);
+
+        dataYExact.push(yEx);
+        dataYEuler.push(yE);
+        dataYHeun.push(yH);
+        dataYRK4.push(yR);
+
+        // Renderizar fila en la tabla
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${t}</td>
+          <td style="color:#6ee7b7;font-weight:600;">${vEx.toFixed(4)}</td>
+          <td>${vE.toFixed(4)}</td>
+          <td style="color:#fcd34d;">${errVE.toFixed(4)}</td>
+          <td>${vH.toFixed(4)}</td>
+          <td style="color:#c084fc;">${vR.toFixed(4)}</td>
+          <td style="color:#6ee7b7;font-weight:600;">${yEx.toFixed(4)}</td>
+          <td>${yE.toFixed(4)}</td>
+          <td style="color:#fcd34d;">${errYE.toFixed(4)}</td>
+          <td>${yH.toFixed(4)}</td>
+          <td style="color:#c084fc;">${yR.toFixed(4)}</td>
+        `;
+        tbody.appendChild(row);
+
+        // Avanzar al siguiente paso (si no es el último)
+        if (i < steps) {
+          // 1. Método de Euler (Orden 1)
+          const k1v_E = dvdt(vE);
+          const k1y_E = dydt(vE);
+          vE = vE + h * k1v_E;
+          yE = yE + h * k1y_E;
+
+          // 2. Método de Heun / RK2 (Orden 2)
+          const k1v_H = dvdt(vH);
+          const k1y_H = dydt(vH);
+          const vPred = vH + h * k1v_H;
+          const k2v_H = dvdt(vPred);
+          const k2y_H = dydt(vPred);
+          vH = vH + (h / 2) * (k1v_H + k2v_H);
+          yH = yH + (h / 2) * (k1y_H + k2y_H);
+
+          // 3. Método de Runge-Kutta de 4to Orden (RK4)
+          const k1v = dvdt(vR);
+          const k1y = dydt(vR);
+
+          const k2v = dvdt(vR + 0.5 * h * k1v);
+          const k2y = dydt(vR + 0.5 * h * k1v);
+
+          const k3v = dvdt(vR + 0.5 * h * k2v);
+          const k3y = dydt(vR + 0.5 * h * k2v);
+
+          const k4v = dvdt(vR + h * k3v);
+          const k4y = dydt(vR + h * k3v);
+
+          vR = vR + (h / 6) * (k1v + 2 * k2v + 2 * k3v + k4v);
+          yR = yR + (h / 6) * (k1y + 2 * k2y + 2 * k3y + k4y);
+        }
+      }
+
+      // Resultados finales en tMax
+      const finalVEx = dataVExact[dataVExact.length - 1];
+      const finalVEu = dataVEuler[dataVEuler.length - 1];
+      const finalVHe = dataVHeun[dataVHeun.length - 1];
+      const finalVRK = dataVRK4[dataVRK4.length - 1];
+
+      const finalYEx = dataYExact[dataYExact.length - 1];
+      const finalYEu = dataYEuler[dataYEuler.length - 1];
+      const finalYHe = dataYHeun[dataYHeun.length - 1];
+      const finalYRK = dataYRK4[dataYRK4.length - 1];
+
+      const errVFinalEuler = Math.abs(finalVEx - finalVEu);
+      const errYFinalEuler = Math.abs(finalYEx - finalYEu);
+      const errYFinalHeun = Math.abs(finalYEx - finalYHe);
+      const errYFinalRK4 = Math.abs(finalYEx - finalYRK);
+
+      // Actualizar KPIs
+      document.getElementById('kpiVExact').textContent = `${finalVEx.toFixed(4)} m/s`;
+      document.getElementById('kpiVTerminal').textContent = `Vel. límite teórica: ${vTerm.toFixed(2)} m/s`;
+
+      document.getElementById('kpiVEuler').textContent = `${finalVEu.toFixed(4)} m/s`;
+      document.getElementById('kpiVErrEuler').textContent = `Error Euler: ${errVFinalEuler.toFixed(4)} m/s`;
+
+      document.getElementById('kpiYExact').textContent = `${finalYEx.toFixed(4)} m`;
+      document.getElementById('kpiYHeun').textContent = `Heun: ${finalYHe.toFixed(2)} m | RK4: ${finalYRK.toFixed(4)} m`;
+
+      document.getElementById('kpiYEuler').textContent = `${finalYEu.toFixed(4)} m`;
+      document.getElementById('kpiYErrEuler').textContent = `Error Euler: ${errYFinalEuler.toFixed(4)} m`;
+
+      // Banner de verificación de tolerancia NASA (Error v < 0.5 m/s y Error y < 5 m)
+      const statusBanner = document.getElementById('missionStatus');
+      if (errVFinalEuler < 0.5 && errYFinalEuler < 5.0) {
+        statusBanner.className = 'status-banner status-ok';
+        statusBanner.innerHTML = `✅ <strong>AUTORIZACIÓN DE LANZAMIENTO CONCEDIDA (h = ${h} s):</strong> Euler cumple los márgenes de seguridad de la NASA (Error v = ${errVFinalEuler.toFixed(4)} m/s &lt; 0.5 m/s; Error y = ${errYFinalEuler.toFixed(4)} m &lt; 5 m).`;
+      } else {
+        statusBanner.className = 'status-banner status-warn';
+        statusBanner.innerHTML = `⚠️ <strong>PRECISIÓN INSUFICIENTE EN EULER (h = ${h} s):</strong> Error en velocidad (${errVFinalEuler.toFixed(4)} m/s) o altura (${errYFinalEuler.toFixed(4)} m) excede el límite permitido. Reduce el paso <em>h</em> a ≤ 0.5 s.`;
+      }
+
+      // Análisis dinámico
+      document.getElementById('dynamicAnalysis').innerHTML = `
+        <h3>Comparación de Orden de Convergencia y Comportamiento Físico (t = ${tMax} s, h = ${h} s)</h3>
+        <p style="margin-bottom: 0.6rem;">
+          <strong>1. Comportamiento físico:</strong> Al encenderse el motor, la aceleración neta inicial es <em>a(0) = ${A.toFixed(2)} m/s²</em>. A medida que aumenta la velocidad, la resistencia aerodinámica (<em>kv</em>) crece y reduce la aceleración, haciendo que el cohete tienda asintóticamente hacia su velocidad terminal de <strong>${vTerm.toFixed(2)} m/s</strong>.
+        </p>
+        <p style="margin-bottom: 0.6rem;">
+          <strong>2. ¿Por qué Euler sobreestima velocidad y subestima altura?</strong> Porque es un método de primer orden <em>O(h)</em> que congela la pendiente al inicio de cada intervalo. Como la aceleración disminuye con el tiempo, usar la aceleración inicial sobreestima la velocidad; inversamente, como la velocidad aumenta con el tiempo, usar la velocidad inicial subestima el desplazamiento.
+        </p>
+        <p>
+          <strong>3. Justificación del método más preciso (RK4):</strong> Para este mismo paso <em>h = ${h} s</em>, el error absoluto en altura es:
+          <br>• <strong>Euler (Orden 1):</strong> ${errYFinalEuler.toFixed(6)} m
+          <br>• <strong>Heun / RK2 (Orden 2):</strong> ${errYFinalHeun.toFixed(6)} m (promedia pendiente inicial y final)
+          <br>• <strong>Runge-Kutta RK4 (Orden 4):</strong> ${errYFinalRK4.toFixed(8)} m (evalúa 4 pendientes ponderadas por intervalo, error global <em>O(h⁴)</em>, logrando una precisión prácticamente idéntica a la solución analítica).
+        </p>
+      `;
+
+      renderCharts(labels, dataVExact, dataVEuler, dataVHeun, dataVRK4, dataYExact, dataYEuler, dataYHeun, dataYRK4);
+    }
+
+    function renderCharts(labels, vEx, vEu, vHe, vRK, yEx, yEu, yHe, yRK) {
+      if (velChartInstance) velChartInstance.destroy();
+      if (heightChartInstance) heightChartInstance.destroy();
+
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
+        },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+        }
+      };
+
+      velChartInstance = new Chart(document.getElementById('velocityChart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Analítica (Exacta)', data: vEx, borderColor: '#10b981', borderWidth: 3, pointRadius: 0 },
+            { label: 'Euler (Orden 1)', data: vEu, borderColor: '#f59e0b', borderDash: [5, 5], borderWidth: 2, pointRadius: 2 },
+            { label: 'Heun (RK2)', data: vHe, borderColor: '#38bdf8', borderWidth: 2, pointRadius: 0 },
+            { label: 'RK4 (Orden 4)', data: vRK, borderColor: '#a855f7', borderDash: [2, 2], borderWidth: 2, pointRadius: 0 }
+          ]
+        },
+        options: commonOptions
+      });
+
+      heightChartInstance = new Chart(document.getElementById('heightChart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Analítica (Exacta)', data: yEx, borderColor: '#10b981', borderWidth: 3, pointRadius: 0 },
+            { label: 'Euler (Orden 1)', data: yEu, borderColor: '#f59e0b', borderDash: [5, 5], borderWidth: 2, pointRadius: 2 },
+            { label: 'Heun (RK2)', data: yHe, borderColor: '#38bdf8', borderWidth: 2, pointRadius: 0 },
+            { label: 'RK4 (Orden 4)', data: yRK, borderColor: '#a855f7', borderDash: [2, 2], borderWidth: 2, pointRadius: 0 }
+          ]
+        },
+        options: commonOptions
+      });
+    }
+
+    // Ejecutar simulación inicial al cargar la página
+    window.addEventListener('DOMContentLoaded', runSimulation);
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Agregar esta línea para renderizar todas las fórmulas LaTeX -->
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+</html>
